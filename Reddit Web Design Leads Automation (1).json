@@ -1,0 +1,332 @@
+{
+  "name": "Reddit Web Design Leads Automation",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "25489d4b-5d52-46a6-bed2-d2f6e9a9ab38",
+      "name": "Every 3 hours",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        32,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "location": "allReddit",
+        "keyword": "={{$json[\"keyword\"]}}",
+        "returnAll": true,
+        "additionalFields": {
+          "sort": "new"
+        }
+      },
+      "id": "b47a1bcd-3cb4-41c6-ba39-b16db991a7b5",
+      "name": "Search Reddit Posts",
+      "type": "n8n-nodes-base.reddit",
+      "typeVersion": 1,
+      "position": [
+        512,
+        -32
+      ],
+      "credentials": {
+        "redditOAuth2Api": {
+          "id": "kbTNK0amSIZN2OQ9",
+          "name": "Reddit account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "prompt": "You are an AI assistant that extracts structured lead details from Reddit posts. \nAnalyze the text below and extract only the available information. \nIf a field is missing, leave it blank. \n\nReturn output strictly as JSON with the following keys:\n{\n \"Timestamp\": \"\",\n \"Reddit Username\": \"\",\n \"Post Title\": \"\",\n \"Subreddit\": \"\",\n \"Post Link\": \"\",\n \"Extracted Info\": \"\",\n \"Status\": \"\",\n \"Reply Timestamp\": \"\",\n  \"name\": \"\",\n  \"email\": \"\",\n  \"phone\": \"\",\n  \"city\": \"\",\n  \"state\": \"\",\n  \"country\": \"\",\n  \"business_type\": \"\",\n  \"requirement_summary\": \"\"\n}\n\nPost text:\n{{ $json[\"selftext\"] || $json[\"title\"] }}\n",
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "9d7adfd4-f449-4e32-956f-aa1aa480380c",
+      "name": "AI Extract Info",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        992,
+        -32
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "vxzOIjP8Kq7DNAjH",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "append",
+        "sheetId": "1I2bIlJIS0yrXh4VMD6s4H2JMgCBKojU1toCU55GsoFo",
+        "range": "Leads! A1",
+        "options": {
+          "valueInputMode": "RAW"
+        }
+      },
+      "id": "f940b817-5724-46ed-946b-3a30e5ced1cf",
+      "name": "Add to Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        -32
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "O7hSTgCfEV1YgS7k",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "prompt": "You are a friendly professional web design agency owner.\nWrite a short, natural Reddit comment that offers help and invites the user to get a free website plan.\nKeep it conversational, not salesy.\n\nInclude this link at the end:\nhttps://bricksbuilderagency.us/\n\nPost context:\n{{ $json['selftext'] }}",
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "8c9717b8-3c50-423b-aada-585fb3e1bbb0",
+      "name": "AI Generate Comment Reply",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        -32
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "vxzOIjP8Kq7DNAjH",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "postComment",
+        "operation": "reply",
+        "commentId": "2fd3a7fb-b973-4da5-88c7-79c3d1505435&iId=6e583444-1867-4b0a-8f28-bcd6a42d9f22",
+        "replyText": "we are here to help you."
+      },
+      "id": "287cbb51-b5d5-494f-9c5a-1b18619558e9",
+      "name": "Post Reddit Comment",
+      "type": "n8n-nodes-base.reddit",
+      "typeVersion": 1,
+      "position": [
+        1696,
+        -32
+      ],
+      "credentials": {
+        "redditOAuth2Api": {
+          "id": "kbTNK0amSIZN2OQ9",
+          "name": "Reddit account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "append",
+        "sheetId": "1I2bIlJIS0yrXh4VMD6s4H2JMgCBKojU1toCU55GsoFo",
+        "range": "Leads!A1",
+        "options": {
+          "valueInputMode": "RAW"
+        }
+      },
+      "id": "8fdb71b5-2e02-4bab-8ad7-d65c6405bb5a",
+      "name": "Update Sheet Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        1936,
+        -32
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "O7hSTgCfEV1YgS7k",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        400,
+        -256
+      ],
+      "id": "1fef72f4-8fa9-4afa-b63f-4ac75eda2f5f",
+      "name": "When clicking ‘Execute workflow’",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "prompt": "Extract the following details from this Reddit post (if present):\n- Person or company name\n- Email address\n- Phone number\n- City, State, or Country\n- Business type\nReturn as JSON.\n\nPost:\n{{ $json[\"selftext\"] }}",
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "6cb786dc-42d1-49bc-a563-a36349270884",
+      "name": "AI Qualify Lead Intent",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        752,
+        -32
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "vxzOIjP8Kq7DNAjH",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Wrorkflow Lead Generation via Reddit + OpenAI + other nodes\nReddit + OpenAI + Google Sheets Lead Generation Workflow\n\nAutomation Type: AI-Powered Lead Generation\nWorkflow Components:\n\n🔹 1 Trigger (Manual or Automated)\n\n🔹 1 Function Node (Free) to give appropriate prompt in terms of Name, Email, Phone, Location, etc.\n\n🔹 3 OpenAI Nodes (Paid)\n\n🔹 2 Reddit Nodes (Free API)\n\n🔹 2 Google Sheets Nodes (Free Integration)\n\n\n🧠 Workflow Description\n\nThis automation workflow intelligently connects Reddit, OpenAI, and Google Sheets to generate real website design and development leads automatically — without manual searching or replying.\n\nIt continuously monitors popular Subreddits like r/webdev, r/freelance, r/entrepreneur, and r/startups for new posts where users are looking for web design, WordPress, Shopify, or custom website development help.\n\nWhenever a potential client post is found, AI instantly qualifies the lead, extracts key details like name, location, and business type, logs everything into a Google Sheet, and posts a friendly auto-reply comment — inviting them to get a free consultation via your Bricks Form link.\n\n⚙️ How the Workflow Works (Node-by-Node)\nStep\tNode Type\tPurpose\n1️⃣\tManual or Automated Trigger\tStarts the workflow manually or runs every few hours.\n2️⃣\tReddit Search (Free)\tScans targeted Subreddits for posts needing website design help.\n3️⃣\tOpenAI #1 – Intent Qualifier (Paid)\tAnalyzes post text to decide if the user is a potential client.\n4️⃣\tOpenAI #2 – Info Extractor (Paid)\tExtracts name, email, phone, and location from the post (if mentioned).\n5️⃣\tGoogle Sheets – Add Lead (Free)\tLogs qualified leads into Google Sheets for your team to track.\n6️⃣\tOpenAI #3 – Comment Generator (Paid)\tCreates a natural, human-like reply to engage the user.\n7️⃣\tReddit Comment (Free)\tPosts your automated response with your website link (e.g., https://bricksbuilderagency.us/).\n8️⃣\tGoogle Sheets – Update Lead (Free)\tUpdates the lead record with reply status and timestamp.\n💡 Why This Workflow is Important\n\n🕒 Saves Hours of Manual Work: No need to search Reddit manually or reply one by one — the bot does it 24/7.\n\n🧠 AI-Powered Qualification: Filters only genuine potential clients looking for design or development help.\n\n💬 Engages Instantly: Responds in real time while competitors are still browsing Reddit.\n\n📊 Centralized Lead Tracking: Every lead is neatly recorded in Google Sheets — perfect for follow-ups.\n\n🌍 Global Reach: Targets users from the USA, Canada, Australia, UK, and other international markets.\n\n💰 Converts Discussions into Clients: Turns casual Reddit conversations into business opportunities.\n\n🚀 Benefits for Business Owners\nBenefit\tDescription\nFully Automated\tNo coding or manual setup once configured.\nSmart Lead Capture\tExtracts data automatically from Reddit posts.\nCustomizable\tModify AI prompts to match your business niche.\nLow-Cost Automation\tReddit and Google Sheets are free; only OpenAI API has minimal usage cost.\nScalable\tWorks for multiple services like SEO, marketing, design, or content creation.\n🧩 Use Case Example\n\nScenario:\nA small business owner from Canada posts on Reddit:\n\n“Looking for someone to build a WordPress website for my new startup.”\n\nAutomation Reaction:\n\nReddit node detects the post.\n\nAI qualifies it as a real lead.\n\nLead info is saved in Google Sheets.\n\nAI writes and posts a friendly reply like:\n\n“Hey 👋 I’d love to help you design your new WordPress site! You can get a free website plan here: bricksbuilderagency.us\n.”\n\nWithin minutes, your agency has reached a potential client without lifting a finger.\n\n🧭 Ideal For:\n\nWebsite Design & Development Agencies\n\nFreelancers targeting international clients\n\nDigital Marketing Firms\n\nWordPress, Shopify, or Webflow Experts\n\nEntrepreneurs wanting to automate lead generation\n\n🧩 Automation Summary\nTool\tPurpose\nReddit\tSource of real client posts\nOpenAI\tAI-based decision & content generation\nGoogle Sheets\tLead logging and status tracking\nn8n\tOrchestrator connecting all tools seamlessly",
+        "height": 1904,
+        "width": 1520
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        256
+      ],
+      "typeVersion": 1,
+      "id": "7829eaa8-27a1-4ade-b826-140e4f297fc4",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "// List of keyword phrases to search across Reddit\nconst keywords = [\n  \"need website\",\n  \"wordpress help\",\n  \"build my site\",\n  \"shopify expert\",\n  \"web developer needed\",\n  \"freelance web designer\",\n  \"website redesign\",\n  \"webflow developer\",\n  \"website for my business\"\n];\n\n// Convert each keyword into a separate item for the next node\nreturn keywords.map(k => ({ json: { keyword: k } }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        -32
+      ],
+      "id": "1b40e485-1c4f-4c92-b3ab-2d38b6a4fae7",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every 3 hours": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Reddit Posts": {
+      "main": [
+        [
+          {
+            "node": "AI Qualify Lead Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Extract Info": {
+      "main": [
+        [
+          {
+            "node": "Add to Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to Google Sheet": {
+      "main": [
+        [
+          {
+            "node": "AI Generate Comment Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Generate Comment Reply": {
+      "main": [
+        [
+          {
+            "node": "Post Reddit Comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Reddit Comment": {
+      "main": [
+        [
+          {
+            "node": "Update Sheet Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        []
+      ]
+    },
+    "AI Qualify Lead Intent": {
+      "main": [
+        [
+          {
+            "node": "AI Extract Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Sheet Status": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Search Reddit Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "AWMrm7dMMiam0Q1Q",
+    "timezone": "Asia/Kolkata"
+  },
+  "versionId": "2b43c8d4-6d1a-4765-9608-7ddfe7358fbc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ad6ad5356af4350ed8fa033cd9035d029c441729753cce3e535cebe092bf7b33"
+  },
+  "id": "FnVyNLgXqRmtDgBQ",
+  "tags": []
+}
