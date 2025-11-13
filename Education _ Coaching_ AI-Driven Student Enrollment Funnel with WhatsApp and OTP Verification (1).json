@@ -1,0 +1,748 @@
+{
+  "name": "Education / Coaching: AI-Driven Student Enrollment Funnel with WhatsApp and OTP Verification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-webhook",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "011c91aa-536c-4141-a477-3b73c45c0219",
+      "name": "WhatsApp Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2816,
+        384
+      ],
+      "webhookId": "9b5b88d9-b283-4631-bb5e-0a0fd3db9883"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "smsApiUrl",
+              "value": "<__PLACEHOLDER_VALUE__SMS API URL (e.g., Twilio/MSG91)__>",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "smsApiKey",
+              "value": "<__PLACEHOLDER_VALUE__SMS API Key__>",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "whatsappApiUrl",
+              "value": "<__PLACEHOLDER_VALUE__WhatsApp API URL (e.g., Twilio/WATI/360Dialog)__>",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "whatsappApiKey",
+              "value": "<__PLACEHOLDER_VALUE__WhatsApp API Key__>",
+              "type": "string"
+            },
+            {
+              "id": "id-5",
+              "name": "counselorEmail",
+              "value": "<__PLACEHOLDER_VALUE__Counselor Email Address__>",
+              "type": "string"
+            },
+            {
+              "id": "id-6",
+              "name": "otpExpiryMinutes",
+              "value": 10,
+              "type": "number"
+            },
+            {
+              "id": "id-7",
+              "name": "availableCourses",
+              "value": "Mobile Repair, Digital Marketing, Spoken English, Web Development, Graphic Design",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "b3806265-b423-464f-90a5-906d543d517d",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2592,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "studentName",
+              "value": "={{ $json.body.name || $json.body.ProfileName || 'Unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "phoneNumber",
+              "value": "={{ $json.body.from || $json.body.WaId || $json.body.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "messageText",
+              "value": "={{ $json.body.Body || $json.body.text || $json.body.message }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "studentEmail",
+              "value": "={{ $json.body.email || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-5",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "baf03ba2-3095-4af4-87d3-1e58f4acb95f",
+      "name": "Extract WhatsApp Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2368,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "message"
+      },
+      "id": "f68272b0-a059-4076-8144-872b7c69d430",
+      "name": "AI Lead Qualification",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        -2144,
+        384
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "206iata0iePo65VY",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResponse = $input.first().json.message?.content || $input.first().json.output || '';\n\ntry {\n  // Extract JSON from response\n  const jsonMatch = aiResponse.match(/\\{[\\s\\S]*\\}/);\n  if (!jsonMatch) {\n    return [{\n      json: {\n        intent: 'Other',\n        courseInterest: '',\n        interestLevel: 'Low',\n        qualified: false,\n        reason: 'Could not parse AI response'\n      }\n    }];\n  }\n  \n  const parsed = JSON.parse(jsonMatch[0]);\n  \n  return [{\n    json: {\n      ...parsed,\n      studentName: $('Extract WhatsApp Data').first().json.studentName,\n      phoneNumber: $('Extract WhatsApp Data').first().json.phoneNumber,\n      studentEmail: $('Extract WhatsApp Data').first().json.studentEmail,\n      messageText: $('Extract WhatsApp Data').first().json.messageText,\n      timestamp: $('Extract WhatsApp Data').first().json.timestamp\n    }\n  }];\n} catch (error) {\n  return [{\n    json: {\n      intent: 'Other',\n      courseInterest: '',\n      interestLevel: 'Low',\n      qualified: false,\n      reason: 'Error parsing response: ' + error.message,\n      studentName: $('Extract WhatsApp Data').first().json.studentName,\n      phoneNumber: $('Extract WhatsApp Data').first().json.phoneNumber,\n      studentEmail: $('Extract WhatsApp Data').first().json.studentEmail,\n      messageText: $('Extract WhatsApp Data').first().json.messageText,\n      timestamp: $('Extract WhatsApp Data').first().json.timestamp\n    }\n  }];\n}"
+      },
+      "id": "fa6b3daa-3c82-401a-84b3-d7a38ab9ab7f",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1792,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $json.qualified }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a3a3f989-6a56-49ef-a827-3151344aff44",
+      "name": "Check If Qualified",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1568,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate 6-digit OTP\nconst otp = Math.floor(100000 + Math.random() * 900000).toString();\n\n// Calculate expiry time\nconst expiryMinutes = $('Workflow Configuration').first().json.otpExpiryMinutes || 10;\nconst expiryTime = new Date(Date.now() + expiryMinutes * 60000).toISOString();\n\nreturn [{\n  json: {\n    ...($input.first().json),\n    otp: otp,\n    otpExpiry: expiryTime,\n    otpGenerated: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "41947c86-eead-4c5e-8741-f87c749ba886",
+      "name": "Generate OTP",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1344,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Workflow Configuration').first().json.smsApiUrl }}",
+        "authentication": "genericCredentialType",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $('Workflow Configuration').first().json.smsApiKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"to\": \"{{ $json.phoneNumber }}\",\n  \"message\": \"Your OTP for course enrollment is: {{ $json.otp }}. Valid for {{ $('Workflow Configuration').first().json.otpExpiryMinutes }} minutes. Do not share this code.\"\n}",
+        "options": {}
+      },
+      "id": "9d9ad8f2-bb82-4036-b7f6-ddcce24f48ca",
+      "name": "Send OTP via SMS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1120,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.studentEmail }}",
+        "subject": "Your Course Enrollment OTP",
+        "message": "=<h2>Welcome to Our Institute!</h2><p>Dear {{ $json.studentName }},</p><p>Thank you for your interest in <strong>{{ $json.courseInterest }}</strong>.</p><p>Your OTP for verification is: <strong style=\"font-size: 24px; color: #2563eb;\">{{ $json.otp }}</strong></p><p>This code is valid for {{ $('Workflow Configuration').first().json.otpExpiryMinutes }} minutes.</p><p>Please do not share this code with anyone.</p><p>Best regards,<br>Admissions Team</p>",
+        "options": {}
+      },
+      "id": "80198c03-bded-48ea-a54d-4e1e41ce7c5b",
+      "name": "Send OTP via Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -1120,
+        384
+      ],
+      "webhookId": "2eb485d5-b73f-48bc-9ed1-a581b170088e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zFGaCtFyLhIlbI4t",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "limitWaitTime": true,
+        "resumeAmount": "={{ $('Workflow Configuration').first().json.otpExpiryMinutes }}",
+        "resumeUnit": "minutes",
+        "options": {}
+      },
+      "id": "2aea3cd4-acc8-4b55-97f7-9831191c3d21",
+      "name": "Wait for OTP Verification",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -896,
+        192
+      ],
+      "webhookId": "438ffd03-78d4-49c6-a25a-b8fbadce244c"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $json.body.otp }}",
+              "rightValue": "={{ $('Generate OTP').first().json.otp }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "id-2",
+              "leftValue": "={{ new Date($json.body.timestamp || Date.now()) }}",
+              "rightValue": "={{ new Date($('Generate OTP').first().json.otpExpiry) }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "before"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "177300e7-6c6c-4864-81a9-ae92dfe85e97",
+      "name": "Check OTP Verification",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -672,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "<__PLACEHOLDER_VALUE__Google Sheet ID__>"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "<__PLACEHOLDER_VALUE__Sheet Name (e.g., Students)__>"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $('Generate OTP').first().json.studentName }}",
+            "Phone": "={{ $('Generate OTP').first().json.phoneNumber }}",
+            "Email": "={{ $('Generate OTP').first().json.studentEmail }}",
+            "Course Interest": "={{ $('Generate OTP').first().json.courseInterest }}",
+            "Interest Level": "={{ $('Generate OTP').first().json.interestLevel }}",
+            "Enrollment Date": "={{ new Date().toISOString() }}",
+            "Status": "Verified",
+            "Source": "WhatsApp"
+          },
+          "matchingColumns": [
+            "Phone"
+          ],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Course Interest",
+              "displayName": "Course Interest",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Interest Level",
+              "displayName": "Interest Level",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Enrollment Date",
+              "displayName": "Enrollment Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f65bcc3b-277c-4afd-a6df-cbdc61a10576",
+      "name": "Add to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -448,
+        96
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "BNAxG50qJBwJrUvv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "lead",
+        "Company": "={{ $('Generate OTP').first().json.studentName }}",
+        "lastName": "={{ $('Generate OTP').first().json.studentName }}",
+        "additionalFields": {
+          "Description": "=Course Interest: {{ $('Generate OTP').first().json.courseInterest }} | Interest Level: {{ $('Generate OTP').first().json.interestLevel }} | Verified via OTP",
+          "Email": "={{ $('Generate OTP').first().json.studentEmail }}",
+          "Lead_Source": "WhatsApp",
+          "Lead_Status": "Qualified",
+          "Phone": "={{ $('Generate OTP').first().json.phoneNumber }}"
+        }
+      },
+      "id": "a761e6f7-7a1a-42fe-9ca2-93744728d16c",
+      "name": "Create Lead in Zoho CRM",
+      "type": "n8n-nodes-base.zohoCrm",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Workflow Configuration').first().json.counselorEmail }}",
+        "subject": "=🎓 New Verified Student Lead - {{ $('Generate OTP').first().json.courseInterest }}",
+        "message": "=<h2>New Verified Student Lead</h2><table style=\"border-collapse: collapse; width: 100%;\"><tr><td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Name:</strong></td><td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Generate OTP').first().json.studentName }}</td></tr><tr><td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Phone:</strong></td><td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Generate OTP').first().json.phoneNumber }}</td></tr><tr><td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Email:</strong></td><td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Generate OTP').first().json.studentEmail }}</td></tr><tr><td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Course Interest:</strong></td><td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Generate OTP').first().json.courseInterest }}</td></tr><tr><td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Interest Level:</strong></td><td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Generate OTP').first().json.interestLevel }}</td></tr><tr><td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Status:</strong></td><td style=\"padding: 8px; border: 1px solid #ddd;\">✅ Verified via OTP</td></tr><tr><td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Source:</strong></td><td style=\"padding: 8px; border: 1px solid #ddd;\">WhatsApp</td></tr><tr><td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Timestamp:</strong></td><td style=\"padding: 8px; border: 1px solid #ddd;\">{{ new Date().toLocaleString() }}</td></tr></table><p><strong>Original Message:</strong><br>{{ $('Generate OTP').first().json.messageText }}</p><p>This lead has been added to Google Sheets and Zoho CRM.</p>",
+        "options": {}
+      },
+      "id": "b9b7f4e3-ac4b-4c12-9d5a-9239581b7283",
+      "name": "Notify Counselor",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "862922b3-42e0-4987-bef4-476ebe568c6d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zFGaCtFyLhIlbI4t",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Workflow Configuration').first().json.whatsappApiUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $('Workflow Configuration').first().json.whatsappApiKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"to\": \"{{ $('Generate OTP').first().json.phoneNumber }}\",\n  \"message\": \"🎉 Congratulations {{ $('Generate OTP').first().json.studentName }}!\\n\\nYour enrollment for *{{ $('Generate OTP').first().json.courseInterest }}* has been successfully verified!\\n\\nOur counselor will contact you within 24 hours to complete the admission process.\\n\\nThank you for choosing us! 🙏\"\n}",
+        "options": {}
+      },
+      "id": "0be741f0-ad2e-4813-8f36-a49a9ef020da",
+      "name": "Send WhatsApp Confirmation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        0,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Workflow Configuration').first().json.whatsappApiUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $('Workflow Configuration').first().json.whatsappApiKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"to\": \"{{ $json.phoneNumber }}\",\n  \"message\": \"Thank you for contacting us, {{ $json.studentName }}!\\n\\nWe appreciate your interest. However, we currently don't have a course matching your inquiry.\\n\\nOur available courses are:\\n{{ $('Workflow Configuration').first().json.availableCourses }}\\n\\nPlease reply with the course you're interested in, and we'll be happy to assist you! 😊\"\n}",
+        "options": {}
+      },
+      "id": "c4e0cdef-39bd-4da6-aa3a-9c1bce347ffc",
+      "name": "Send Rejection Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1344,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Workflow Configuration').first().json.whatsappApiUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $('Workflow Configuration').first().json.whatsappApiKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"to\": \"{{ $('Generate OTP').first().json.phoneNumber }}\",\n  \"message\": \"Hi {{ $('Generate OTP').first().json.studentName }},\\n\\nYour OTP verification has expired or failed.\\n\\nPlease send us a new message to restart the enrollment process.\\n\\nWe're here to help! 🙏\"\n}",
+        "options": {}
+      },
+      "id": "2aa24de1-d395-4e7e-ae74-4422bd1a6692",
+      "name": "Send OTP Failure Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -448,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "content": "📚 AI-Driven Student Enrollment Funnel - Explained Simply\n🎯 What Does This Workflow Do?\nImagine you run a coaching institute that offers courses like Mobile Repair, Digital Marketing, or Web Development. When students message you on WhatsApp asking about courses, this workflow:\n\nAutomatically reads their WhatsApp message\nUses AI to understand if they're genuinely interested in your courses\nSends them a secret code (OTP) via SMS and email to verify they're real\nSaves their information in Google Sheets and your CRM system\nNotifies your counselor to follow up with the student\nThink of it like a smart robot receptionist that filters serious students from casual inquiries and organizes everything automatically!\n\n✅ Benefits (The Good Stuff!)\nFor Your Institute:\nSaves Time: No need to manually reply to every WhatsApp message\nFilters Leads: AI identifies serious students vs. people just browsing\nPrevents Fake Leads: OTP verification ensures real phone numbers and emails\nAuto-Organization: Student data automatically goes to Google Sheets and CRM\nFast Response: Students get instant replies 24/7, even at midnight!\nFor Students:\nQuick Response: Get immediate feedback about course availability\nSecure Process: OTP verification protects their enrollment\nProfessional Experience: Automated system feels modern and trustworthy\n❌ Disadvantages (The Challenges)\nSetup Complexity: Requires connecting multiple services (WhatsApp API, SMS service, Google Sheets, Zoho CRM)\nCost: SMS services and WhatsApp Business API cost money per message\nTechnical Knowledge: Need to understand APIs and configure multiple platforms\nMaintenance: If any service (SMS, email, WhatsApp) fails, the workflow breaks\nAI Limitations: AI might misunderstand some student messages\nOTP Dependency: Students must have working phone/email to complete enrollment\n🔧 Step-by-Step Implementation Guide\nStep 1: Set Up WhatsApp Business API 📱\nWhat it is: A special WhatsApp account for businesses that can receive messages automatically\n\nHow to do it:\n\nSign up for a WhatsApp Business API provider (like Twilio, WATI, or 360Dialog)\nGet your API credentials (like a password for your account)\nCopy the webhook URL from the workflow (it's like a mailbox address where messages arrive)\nConfigure your WhatsApp provider to send messages to this webhook URL\nSimple analogy: Like setting up a special mailbox that automatically forwards letters to your robot assistant\n\nStep 2: Configure SMS Service 📨\nWhat it is: A service that sends text messages to students' phones\n\nHow to do it:\n\nSign up for an SMS provider (Twilio or MSG91 are popular)\nGet your API URL and API Key\nAdd these to the \"Workflow Configuration\" node in n8n\nTest by sending yourself a message\nSimple analogy: Like hiring a messenger service that delivers notes to people's phones\n\nStep 3: Connect Gmail ✉️\nWhat it is: Your email account that will send OTP codes and notifications\n\nHow to do it:\n\nIn n8n, click on the \"Send OTP via Email\" node\nClick \"Create New Credential\"\nSign in with your Gmail account\nAllow n8n to send emails on your behalf\nRepeat for \"Notify Counselor\" node\nSimple analogy: Giving your robot assistant permission to send emails from your account\n\nStep 4: Set Up Google Sheets 📊\nWhat it is: A spreadsheet where all student information gets saved\n\nHow to do it:\n\nCreate a new Google Sheet\nAdd column headers: Name, Phone, Email, Course Interest, Interest Level, Enrollment Date, Status, Source\nCopy the Sheet ID from the URL (the long code in the web address)\nPaste it into the \"Add to Google Sheets\" node\nConnect your Google account in n8n\nSimple analogy: Creating a digital notebook where your robot writes down every student's details\n\nStep 5: Connect Zoho CRM 🗂️\nWhat it is: A customer management system that tracks all your leads\n\nHow to do it:\n\nSign up for Zoho CRM (free plan available)\nIn n8n, click \"Create Lead in Zoho CRM\" node\nAdd your Zoho credentials\nTest the connection\nSimple analogy: A filing cabinet where you organize student information for follow-ups\n\nStep 6: Configure AI Lead Qualification 🤖\nWhat it is: The AI brain that reads messages and decides if students are serious\n\nHow to do it:\n\nThe workflow uses OpenAI (already connected with free credits)\nYou need to add a prompt telling AI what to look for\nUpdate the \"AI Lead Qualification\" node with instructions like:\n\"Check if the student mentions any of our courses\"\n\"Determine their interest level (High/Medium/Low)\"\n\"Mark as qualified if they ask about enrollment or pricing\"\nSimple analogy: Training a smart assistant to recognize serious customers from window shoppers\n\nStep 7: Fill in Configuration Values ⚙️\nWhat it is: The central settings that control the whole workflow\n\nIn the \"Workflow Configuration\" node, replace placeholders:\n\nsmsApiUrl: Your SMS service URL\nsmsApiKey: Your SMS service password\nwhatsappApiUrl: Your WhatsApp API URL\nwhatsappApiKey: Your WhatsApp API password\ncounselorEmail: Email address of the person who follows up with students\notpExpiryMinutes: How long the OTP code works (default: 10 minutes)\navailableCourses: List your actual courses\nSimple analogy: Writing down all the important phone numbers and addresses your robot assistant needs\n\nStep 8: Test the Workflow 🧪\nHow to test:\n\nClick \"Test Workflow\" in n8n\nSend a WhatsApp message to your business number: \"I want to learn Web Development\"\nCheck if you receive an OTP via SMS and email\nReply with the OTP code\nVerify the student appears in Google Sheets and Zoho CRM\nCheck if counselor receives notification email\nSimple analogy: Doing a practice run to make sure all the gears work together\n\nStep 9: Activate and Monitor 🚀\nFinal steps:\n\nClick the toggle switch to activate the workflow\nMonitor the first few real enrollments\nCheck for any errors in the execution log\nAdjust AI prompts if it's misunderstanding messages\nSimple analogy: Opening your automated store and watching to make sure everything runs smoothly\n\n🎓 Summary for an 8th Grader\nIn simple terms: This is like building a smart robot that:\n\nReads WhatsApp messages from students\nFigures out if they really want to join your courses\nSends them a secret code to prove they're real\nSaves all their info automatically\nTells your teacher to call them back\nThe hard part: You need to connect 5 different services (WhatsApp, SMS, Email, Google Sheets, CRM) and make them all talk to each other.\n\nThe cool part: Once it's set up, it works 24/7 without you lifting a finger! Students get instant responses, and you only talk to serious, verified leads.\n\nLet me know if you'd like to adjust anything or need help understanding any specific part better!",
+        "height": 2368,
+        "width": 1920
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2544,
+        768
+      ],
+      "typeVersion": 1,
+      "id": "072d1ccd-fdbc-429f-9db7-23fba84a7b2b",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Extract WhatsApp Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract WhatsApp Data": {
+      "main": [
+        [
+          {
+            "node": "AI Lead Qualification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Lead Qualification": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Check If Qualified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Qualified": {
+      "main": [
+        [
+          {
+            "node": "Generate OTP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Rejection Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate OTP": {
+      "main": [
+        [
+          {
+            "node": "Send OTP via SMS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send OTP via Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send OTP via SMS": {
+      "main": [
+        [
+          {
+            "node": "Wait for OTP Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for OTP Verification": {
+      "main": [
+        [
+          {
+            "node": "Check OTP Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check OTP Verification": {
+      "main": [
+        [
+          {
+            "node": "Add to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send OTP Failure Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Create Lead in Zoho CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Lead in Zoho CRM": {
+      "main": [
+        [
+          {
+            "node": "Notify Counselor",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send WhatsApp Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "eb4b6d59-93a4-44c6-9e40-e7f58e7bf77a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aa68df2d554815409802abaea9ca806fa0ab68433ab899bac37a38a400ae4dca"
+  },
+  "id": "OVPeYtItAazyq6Js",
+  "tags": []
+}
